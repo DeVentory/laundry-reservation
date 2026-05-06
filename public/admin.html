@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세탁실 관리자</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <!-- 로그인 화면 -->
+  <div id="login-screen">
+    <div class="login-box">
+      <div class="login-icon">🔐</div>
+      <h1>관리자 로그인</h1>
+      <p class="login-sub">세탁실 예약 관리자 페이지</p>
+      <form id="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="admin-pw">비밀번호</label>
+          <input type="password" id="admin-pw" placeholder="관리자 비밀번호 입력">
+        </div>
+        <button type="submit" class="btn-primary" id="login-btn">로그인</button>
+      </form>
+      <a href="/" class="back-link">← 예약 페이지로 돌아가기</a>
+    </div>
+  </div>
+
+  <!-- 관리자 패널 -->
+  <div id="admin-panel" class="hidden">
+    <header>
+      <div class="header-left">
+        <span class="header-icon">🧺</span>
+        <div>
+          <h1>세탁실 관리자</h1>
+          <p class="header-sub">거주자 및 예약 관리</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="/" class="btn-ghost">예약 페이지</a>
+        <button id="logout-btn" class="btn-ghost">로그아웃</button>
+      </div>
+    </header>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="users">
+        거주자 관리
+        <span class="tab-badge" id="user-count-badge">0</span>
+      </button>
+      <button class="tab-btn" data-tab="reservations">
+        예약 관리
+        <span class="tab-badge" id="res-count-badge">0</span>
+      </button>
+    </div>
+
+    <main>
+      <!-- 거주자 관리 탭 -->
+      <div id="tab-users" class="tab-content active">
+        <div class="section-header">
+          <h2>등록된 거주자</h2>
+          <p class="section-desc">이름 수정 또는 퇴실 처리를 할 수 있습니다</p>
+        </div>
+        <div id="users-list" class="card-grid">
+          <div class="loading">로딩 중...</div>
+        </div>
+      </div>
+
+      <!-- 예약 관리 탭 -->
+      <div id="tab-reservations" class="tab-content">
+        <div class="section-header">
+          <h2>전체 예약 목록</h2>
+          <p class="section-desc">모든 날짜의 예약을 조회하고 강제 삭제할 수 있습니다</p>
+        </div>
+        <div id="reservations-list" class="reservations-table-wrap">
+          <div class="loading">로딩 중...</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 이름 수정 모달 -->
+  <div class="modal-overlay hidden" id="edit-modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>이름 수정</h3>
+        <button class="modal-close" id="edit-modal-close">✕</button>
+      </div>
+      <p class="modal-desc" id="edit-modal-desc"></p>
+      <div class="form-group">
+        <label for="edit-name-input">새 이름</label>
+        <input type="text" id="edit-name-input" placeholder="수정할 이름을 입력하세요">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-outline" id="edit-cancel-btn">취소</button>
+        <button class="btn-primary" id="edit-confirm-btn">수정하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 거주자 삭제 모달 -->
+  <div class="modal-overlay hidden" id="delete-modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>거주자 삭제</h3>
+        <button class="modal-close" id="delete-modal-close">✕</button>
+      </div>
+      <p class="modal-desc" id="delete-modal-desc"></p>
+      <label class="checkbox-label">
+        <input type="checkbox" id="delete-reservations-check">
+        해당 거주자의 예약도 함께 삭제
+      </label>
+      <div class="modal-actions">
+        <button class="btn-outline" id="delete-cancel-btn">취소</button>
+        <button class="btn-danger" id="delete-confirm-btn">삭제하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>

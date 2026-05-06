@@ -4,6 +4,14 @@ const path = require('path');
 
 const app = express();
 const DB_PATH = path.join(__dirname, 'data.json');
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1234';
+
+function requireAdmin(req, res, next) {
+  if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: '관리자 비밀번호가 올바르지 않습니다' });
+  }
+  next();
+}
 
 // ─── 데이터 저장소 (JSON 파일) ──────────────────────────────────────────────
 
@@ -64,7 +72,7 @@ app.post('/api/login', (req, res) => {
   const existing = db.users.find(u => u.room === room);
 
   if (!existing) {
-    db.users.push({ room, name });
+    db.users.push({ room, name, registered_at: new Date().toISOString() });
     writeDB(db);
     return res.json({ room, name, isNew: true });
   }
@@ -153,6 +161,81 @@ app.delete('/api/reservations/:id', (req, res) => {
   if (!reservation) return res.status(404).json({ error: '예약을 찾을 수 없습니다' });
   if (reservation.room !== room?.trim()) return res.status(403).json({ error: '호실 번호가 일치하지 않습니다' });
 
+  db.reservations = db.reservations.filter(r => r.id !== id);
+  writeDB(db);
+  res.json({ success: true });
+});
+
+// ─── 관리자 API ───────────────────────────────────────────────────────────
+
+// POST /api/admin/login - 비밀번호 확인
+app.post('/api/admin/login', (req, res) => {
+  if (req.body.password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ error: '비밀번호가 올바르지 않습니다' });
+  }
+  res.json({ success: true });
+});
+
+// GET /api/admin/users - 전체 거주자 목록
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+  const db = readDB();
+  const users = db.users.map(u => ({
+    ...u,
+    reservation_count: db.reservations.filter(r => r.room === u.room).length
+  }));
+  res.json(users);
+});
+
+// PATCH /api/admin/users/:room - 거주자 이름 수정
+app.patch('/api/admin/users/:room', requireAdmin, (req, res) => {
+  const room = decodeURIComponent(req.params.room);
+  const name = req.body.name?.trim();
+  if (!name) return res.status(400).json({ error: '이름을 입력해주세요' });
+
+  const db = readDB();
+  const user = db.users.find(u => u.room === room);
+  if (!user) return res.status(404).json({ error: '등록된 거주자를 찾을 수 없습니다' });
+
+  user.name = name;
+  db.reservations.forEach(r => { if (r.room === room) r.name = name; });
+  writeDB(db);
+  res.json({ success: true });
+});
+
+// DELETE /api/admin/users/:room - 거주자 삭제
+app.delete('/api/admin/users/:room', requireAdmin, (req, res) => {
+  const room = decodeURIComponent(req.params.room);
+  const { deleteReservations } = req.body;
+
+  const db = readDB();
+  if (!db.users.find(u => u.room === room)) {
+    return res.status(404).json({ error: '등록된 거주자를 찾을 수 없습니다' });
+  }
+
+  db.users = db.users.filter(u => u.room !== room);
+  if (deleteReservations) {
+    db.reservations = db.reservations.filter(r => r.room !== room);
+  }
+  writeDB(db);
+  res.json({ success: true });
+});
+
+// GET /api/admin/reservations - 전체 예약 목록
+app.get('/api/admin/reservations', requireAdmin, (req, res) => {
+  const db = readDB();
+  const sorted = [...db.reservations].sort((a, b) =>
+    a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time)
+  );
+  res.json(sorted);
+});
+
+// DELETE /api/admin/reservations/:id - 예약 강제 삭제
+app.delete('/api/admin/reservations/:id', requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const db = readDB();
+  if (!db.reservations.find(r => r.id === id)) {
+    return res.status(404).json({ error: '예약을 찾을 수 없습니다' });
+  }
   db.reservations = db.reservations.filter(r => r.id !== id);
   writeDB(db);
   res.json({ success: true });
