@@ -59,6 +59,10 @@ function addDays(isoDate, n) {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+});
+
 // ─── API ──────────────────────────────────────────────────────────────────
 
 // POST /api/login

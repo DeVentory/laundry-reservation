@@ -54,6 +54,15 @@ body {
   margin-top: 18px;
   line-height: 1.6;
 }
+.admin-entry {
+  display: block;
+  margin-top: 20px;
+  font-size: 0.68rem;
+  color: var(--border);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.admin-entry:hover { color: var(--text-sub); }
 
 /* Hidden utility */
 .hidden { display: none !important; }
