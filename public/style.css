@@ -22,15 +22,83 @@ body {
   min-height: 100vh;
 }
 
+/* Login Screen */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(160deg, #EFF3FB 0%, #D6E4F7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 24px;
+}
+.login-screen.hidden { display: none; }
+
+.login-box {
+  background: white;
+  border-radius: 24px;
+  padding: 36px 28px 32px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 8px 40px rgba(74,144,217,0.15);
+  text-align: center;
+}
+.login-icon { font-size: 2.8rem; margin-bottom: 12px; }
+.login-box h1 { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
+.login-sub { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 28px; }
+.login-box .form-group { text-align: left; }
+.login-note {
+  font-size: 0.72rem;
+  color: var(--text-sub);
+  margin-top: 18px;
+  line-height: 1.6;
+}
+
+/* Hidden utility */
+.hidden { display: none !important; }
+
 /* Header */
 header {
   background: linear-gradient(135deg, #4A90D9 0%, #357ABD 100%);
   color: white;
-  padding: 20px 16px 18px;
-  text-align: center;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
-header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
-.subtitle { font-size: 0.78rem; opacity: 0.88; margin-top: 4px; }
+.header-left { flex: 1; min-width: 0; }
+header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
+.subtitle { font-size: 0.7rem; opacity: 0.88; margin-top: 2px; }
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.user-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.2);
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.logout-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.85);
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.18s;
+}
+.logout-btn:hover { background: rgba(255,255,255,0.15); color: white; }
 
 /* Date Tabs */
 .date-tabs {
@@ -344,24 +412,50 @@ main { padding: 14px 14px 90px; max-width: 600px; margin: 0 auto; }
 .btn-primary:hover { background: #357ABD; }
 .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 
-.cancel-desc { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 16px; }
+.cancel-desc { font-size: 0.9rem; color: var(--text); margin-bottom: 20px; line-height: 1.6; }
+
+.cancel-btn-row { display: flex; gap: 10px; }
+
+.btn-outline {
+  flex: 1;
+  padding: 14px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-sub);
+  font-family: inherit;
+  transition: all 0.18s;
+}
+.btn-outline:hover { background: var(--bg); }
 
 .btn-danger {
-  width: 100%;
+  flex: 1;
   padding: 14px;
   background: var(--danger);
   color: white;
   border: none;
   border-radius: 12px;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.18s;
   font-family: inherit;
-  margin-top: 10px;
 }
 .btn-danger:hover { background: #DC2626; }
 .btn-danger:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* 예약 모달 사용자 정보 */
+.modal-user-info {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: var(--text-sub);
+  margin-bottom: 16px;
+}
 
 /* Toast */
 #toast-container {

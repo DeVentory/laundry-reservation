@@ -8,11 +8,13 @@ const DB_PATH = path.join(__dirname, 'data.json');
 // ─── 데이터 저장소 (JSON 파일) ──────────────────────────────────────────────
 
 function readDB() {
-  if (!fs.existsSync(DB_PATH)) return { reservations: [], nextId: 1 };
+  if (!fs.existsSync(DB_PATH)) return { reservations: [], users: [], nextId: 1 };
   try {
-    return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
+    const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
+    if (!data.users) data.users = [];
+    return data;
   } catch {
-    return { reservations: [], nextId: 1 };
+    return { reservations: [], users: [], nextId: 1 };
   }
 }
 
@@ -50,6 +52,29 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── API ──────────────────────────────────────────────────────────────────
+
+// POST /api/login
+app.post('/api/login', (req, res) => {
+  const room = req.body.room?.trim();
+  const name = req.body.name?.trim();
+
+  if (!room || !name) return res.status(400).json({ error: '호실과 이름을 입력해주세요' });
+
+  const db = readDB();
+  const existing = db.users.find(u => u.room === room);
+
+  if (!existing) {
+    db.users.push({ room, name });
+    writeDB(db);
+    return res.json({ room, name, isNew: true });
+  }
+
+  if (existing.name !== name) {
+    return res.status(403).json({ error: '이미 등록된 호실입니다. 이름을 확인해주세요' });
+  }
+
+  res.json({ room: existing.room, name: existing.name, isNew: false });
+});
 
 // GET /api/reservations?date=YYYY-MM-DD
 app.get('/api/reservations', (req, res) => {

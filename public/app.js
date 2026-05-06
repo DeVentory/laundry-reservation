@@ -4,6 +4,7 @@ const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
 
 const MACHINE_LABELS = { washer: '세탁기', dryer: '건조기', both: '세탁+건조' };
 const MACHINE_COLORS = { washer: '#4A90D9', dryer: '#E8834A', both: '#7C5CBF' };
+const SESSION_KEY = 'laundry_session';
 
 let state = {
   currentDate: todayISO(),
@@ -11,18 +12,49 @@ let state = {
   cancelTargetId: null
 };
 
+// ─── 세션 관리 ─────────────────────────────────────────────────────────────
+
+function getSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch { return null; }
+}
+function setSession(data) { localStorage.setItem(SESSION_KEY, JSON.stringify(data)); }
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
 // ─── 초기화 ────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
+  const session = getSession();
+  if (session) {
+    startApp(session);
+  } else {
+    showLoginScreen();
+  }
+});
+
+function showLoginScreen() {
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+
+  document.getElementById('login-form').addEventListener('submit', handleLogin);
+}
+
+function startApp(session) {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+
+  // 헤더에 사용자 정보 표시
+  document.getElementById('user-badge').textContent = `${session.room} ${session.name}`;
+
   buildDateTabs();
   buildTimeAxis();
   setupTimeSelects();
-  setupEventListeners();
+  setupEventListeners(session);
   loadReservations(state.currentDate);
-});
+}
 
-function setupEventListeners() {
-  document.getElementById('btn-reserve').addEventListener('click', openReservationModal);
+function setupEventListeners(session) {
+  document.getElementById('btn-reserve').addEventListener('click', () => openReservationModal(session));
+  document.getElementById('logout-btn').addEventListener('click', handleLogout);
 
   document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target.id === 'modal-overlay') closeAllModals();
@@ -32,10 +64,10 @@ function setupEventListeners() {
     btn.addEventListener('click', closeAllModals);
   });
 
-  document.getElementById('reservation-form').addEventListener('submit', handleSubmit);
-  document.getElementById('cancel-confirm-btn').addEventListener('click', handleCancel);
+  document.getElementById('reservation-form').addEventListener('submit', e => handleSubmit(e, session));
+  document.getElementById('cancel-confirm-btn').addEventListener('click', () => handleCancel(session));
+  document.getElementById('cancel-close-btn').addEventListener('click', closeAllModals);
 
-  // 라디오 버튼 active 클래스 처리
   document.querySelectorAll('#machine-group input[type=radio]').forEach(radio => {
     radio.addEventListener('change', () => {
       document.querySelectorAll('#machine-group .radio-label').forEach(label => {
@@ -45,10 +77,57 @@ function setupEventListeners() {
   });
 }
 
+// ─── 로그인 / 로그아웃 ─────────────────────────────────────────────────────
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const room = document.getElementById('login-room').value.trim();
+  const name = document.getElementById('login-name').value.trim();
+
+  if (!room || !name) {
+    showToast('호실과 이름을 입력해주세요', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room, name })
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      showToast(json.error, 'error');
+      return;
+    }
+
+    setSession(json);
+    startApp(json);
+    showToast(json.isNew ? `${room} 등록 완료! 환영합니다 😊` : `${name}님, 환영합니다!`, 'success');
+  } catch {
+    showToast('서버에 연결할 수 없습니다', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '시작하기';
+  }
+}
+
+function handleLogout() {
+  clearSession();
+  // 탭, 이벤트 리스너 초기화를 위해 페이지 새로고침
+  location.reload();
+}
+
 // ─── 날짜 탭 ───────────────────────────────────────────────────────────────
 
 function buildDateTabs() {
   const container = document.getElementById('date-tabs');
+  container.innerHTML = '';
   const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
   const labelNames = ['오늘', '내일', '모레', '글피'];
 
@@ -57,7 +136,6 @@ function buildDateTabs() {
     const d = new Date(date + 'T00:00:00');
     const tab = document.createElement('button');
     tab.className = 'date-tab' + (i === 0 ? ' active' : '');
-    tab.dataset.date = date;
     tab.innerHTML = `
       <span class="tab-name">${labelNames[i]}</span>
       <span class="tab-date">${d.getMonth() + 1}/${d.getDate()}(${dayNames[d.getDay()]})</span>
@@ -81,7 +159,6 @@ function buildTimeAxis() {
   hours.forEach((h, i) => {
     const tick = document.createElement('div');
     tick.className = 'axis-tick';
-    const pct = ((h - START_HOUR) / (END_HOUR - START_HOUR)) * 100;
     tick.textContent = String(h).padStart(2, '0') + '시';
 
     if (i === 0) {
@@ -89,7 +166,7 @@ function buildTimeAxis() {
     } else if (i === hours.length - 1) {
       tick.style.right = '0';
     } else {
-      tick.style.left = pct + '%';
+      tick.style.left = ((h - START_HOUR) / (END_HOUR - START_HOUR) * 100) + '%';
       tick.style.transform = 'translateX(-50%)';
     }
     axis.appendChild(tick);
@@ -142,9 +219,10 @@ async function loadReservations(date) {
 // ─── 렌더링 ────────────────────────────────────────────────────────────────
 
 function render() {
+  const session = getSession();
   renderBar('washer', 'washer-bar');
   renderBar('dryer', 'dryer-bar');
-  renderList();
+  renderList(session);
 }
 
 function renderBar(machine, barId) {
@@ -171,7 +249,7 @@ function renderBar(machine, barId) {
   });
 }
 
-function renderList() {
+function renderList(session) {
   const list = document.getElementById('reservation-list');
 
   if (state.reservations.length === 0) {
@@ -179,26 +257,29 @@ function renderList() {
     return;
   }
 
-  list.innerHTML = state.reservations.map(r => `
-    <div class="reservation-card card-${r.machine}">
-      <div class="card-info">
-        <div class="card-top">
-          <span class="card-room">${escHtml(r.room)}</span>
-          <span class="card-name">${escHtml(r.name)}</span>
+  list.innerHTML = state.reservations.map(r => {
+    const isOwn = session && r.room === session.room;
+    return `
+      <div class="reservation-card card-${r.machine}">
+        <div class="card-info">
+          <div class="card-top">
+            <span class="card-room">${escHtml(r.room)}</span>
+            <span class="card-name">${escHtml(r.name)}</span>
+          </div>
+          <div class="card-time">${r.start_time} ~ ${r.end_time}</div>
+          <span class="card-machine badge-${r.machine}">${MACHINE_LABELS[r.machine]}</span>
         </div>
-        <div class="card-time">${r.start_time} ~ ${r.end_time}</div>
-        <span class="card-machine badge-${r.machine}">${MACHINE_LABELS[r.machine]}</span>
+        ${isOwn ? `<button class="cancel-btn" onclick="openCancelModal(${r.id}, '${escHtml(r.start_time)}', '${escHtml(r.end_time)}', '${r.machine}')">취소</button>` : ''}
       </div>
-      <button class="cancel-btn" onclick="openCancelModal(${r.id})">취소</button>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // ─── 모달 ──────────────────────────────────────────────────────────────────
 
-function openReservationModal() {
+function openReservationModal(session) {
   document.getElementById('reservation-form').reset();
-  // 라디오 active 초기화
+  document.getElementById('modal-user-info').textContent = `${session.room} ${session.name}님으로 예약됩니다`;
   document.querySelectorAll('#machine-group .radio-label').forEach((label, i) => {
     label.classList.toggle('active', i === 0);
   });
@@ -207,12 +288,13 @@ function openReservationModal() {
   document.getElementById('modal-overlay').classList.add('active');
 }
 
-function openCancelModal(id) {
+function openCancelModal(id, startTime, endTime, machine) {
   state.cancelTargetId = id;
-  document.getElementById('cancel-room').value = '';
+  const machineLabel = MACHINE_LABELS[machine];
+  document.getElementById('cancel-desc').innerHTML =
+    `<strong>${startTime} ~ ${endTime}</strong> ${machineLabel} 예약을<br>정말 취소하시겠어요?`;
   document.getElementById('cancel-modal').classList.add('active');
   document.getElementById('modal-overlay').classList.add('active');
-  setTimeout(() => document.getElementById('cancel-room').focus(), 100);
 }
 
 function closeAllModals() {
@@ -223,16 +305,9 @@ function closeAllModals() {
 
 // ─── API 처리 ──────────────────────────────────────────────────────────────
 
-async function handleSubmit(e) {
+async function handleSubmit(e, session) {
   e.preventDefault();
   const form = e.target;
-  const room = form.room.value.trim();
-  const name = form.name.value.trim();
-
-  if (!room || !name) {
-    showToast('호실과 이름을 입력해주세요', 'error');
-    return;
-  }
 
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
@@ -243,8 +318,8 @@ async function handleSubmit(e) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        room,
-        name,
+        room: session.room,
+        name: session.name,
         date: state.currentDate,
         start_time: form.start_time.value,
         end_time: form.end_time.value,
@@ -269,13 +344,7 @@ async function handleSubmit(e) {
   }
 }
 
-async function handleCancel() {
-  const room = document.getElementById('cancel-room').value.trim();
-  if (!room) {
-    showToast('호실 번호를 입력해주세요', 'error');
-    return;
-  }
-
+async function handleCancel(session) {
   const btn = document.getElementById('cancel-confirm-btn');
   btn.disabled = true;
   btn.textContent = '처리 중...';
@@ -284,7 +353,7 @@ async function handleCancel() {
     const res = await fetch(`/api/reservations/${state.cancelTargetId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ room })
+      body: JSON.stringify({ room: session.room })
     });
 
     const json = await res.json();
@@ -329,7 +398,7 @@ function minToTime(m) {
 function pad(n) { return String(n).padStart(2, '0'); }
 
 function escHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function showToast(msg, type = 'success') {
