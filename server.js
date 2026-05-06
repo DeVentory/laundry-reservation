@@ -133,7 +133,7 @@ app.post('/api/reservations', (req, res) => {
     if (conflict) {
       const label = m === 'washer' ? '세탁기' : '건조기';
       return res.status(409).json({
-        error: `${label}가 ${conflict.start_time}~${conflict.end_time}에 이미 예약되어 있습니다 (${conflict.room} ${conflict.name}님)`
+        error: `${label}가 ${conflict.start_time}~${conflict.end_time}에 이미 예약되어 있습니다 (${conflict.room})`
       });
     }
   }
