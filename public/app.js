@@ -285,6 +285,12 @@ function renderNowLine() {
   });
 }
 
+function roomColor(room) {
+  const num = parseInt(room) || 0;
+  const hue = (num * 137.508) % 360;
+  return `hsl(${hue}, 60%, 48%)`;
+}
+
 function renderBar(machine, barId) {
   const bar = document.getElementById(barId);
   bar.innerHTML = '';
@@ -298,7 +304,7 @@ function renderBar(machine, barId) {
 
     const block = document.createElement('div');
     block.className = 'timeline-block';
-    block.style.cssText = `left:${left}%;width:${width}%;background:${MACHINE_COLORS[machine]}`;
+    block.style.cssText = `left:${left}%;width:${width}%;background:${roomColor(r.room)}`;
     block.title = `${r.room}: ${r.start_time}~${r.end_time}`;
 
     const label = document.createElement('span');
@@ -319,11 +325,12 @@ function renderList(session) {
 
   list.innerHTML = state.reservations.map(r => {
     const isOwn = session && r.room === session.room;
+    const color = roomColor(r.room);
     return `
-      <div class="reservation-card card-${r.machine}">
+      <div class="reservation-card card-${r.machine}" style="border-left: 4px solid ${color}">
         <div class="card-info">
           <div class="card-top">
-            <span class="card-room">${escHtml(r.room)}</span>
+            <span class="card-room" style="color:${color}">${escHtml(r.room)}</span>
           </div>
           <div class="card-time">${r.start_time} ~ ${r.end_time}</div>
           <span class="card-machine badge-${r.machine}">${MACHINE_LABELS[r.machine]}</span>
