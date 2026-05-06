@@ -43,7 +43,7 @@ function startApp(session) {
   document.getElementById('app').classList.remove('hidden');
 
   // 헤더에 사용자 정보 표시
-  document.getElementById('user-badge').textContent = `${session.room} ${session.name}`;
+  document.getElementById('user-badge').textContent = session.room;
 
   buildDateTabs();
   buildTimeAxis();
@@ -239,11 +239,11 @@ function renderBar(machine, barId) {
     const block = document.createElement('div');
     block.className = 'timeline-block';
     block.style.cssText = `left:${left}%;width:${width}%;background:${MACHINE_COLORS[machine]}`;
-    block.title = `${r.room} ${r.name}: ${r.start_time}~${r.end_time}`;
+    block.title = `${r.room}: ${r.start_time}~${r.end_time}`;
 
     const label = document.createElement('span');
     label.className = 'block-label';
-    label.textContent = `${r.room} ${r.name}`;
+    label.textContent = r.room;
     block.appendChild(label);
     bar.appendChild(block);
   });
@@ -264,7 +264,6 @@ function renderList(session) {
         <div class="card-info">
           <div class="card-top">
             <span class="card-room">${escHtml(r.room)}</span>
-            <span class="card-name">${escHtml(r.name)}</span>
           </div>
           <div class="card-time">${r.start_time} ~ ${r.end_time}</div>
           <span class="card-machine badge-${r.machine}">${MACHINE_LABELS[r.machine]}</span>
@@ -279,7 +278,7 @@ function renderList(session) {
 
 function openReservationModal(session) {
   document.getElementById('reservation-form').reset();
-  document.getElementById('modal-user-info').textContent = `${session.room} ${session.name}님으로 예약됩니다`;
+  document.getElementById('modal-user-info').textContent = `${session.room}으로 예약됩니다`;
   document.querySelectorAll('#machine-group .radio-label').forEach((label, i) => {
     label.classList.toggle('active', i === 0);
   });
