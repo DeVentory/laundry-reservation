@@ -586,6 +586,41 @@ main { padding: 14px 14px 90px; max-width: 600px; margin: 0 auto; }
   margin-bottom: 16px;
 }
 
+/* 공지사항 */
+.notice-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.notice-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.83rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+.notice-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.notice-divider {
+  border-top: 1px solid var(--border);
+  margin: 2px 0;
+}
+.notice-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.notice-link:hover { text-decoration: underline; }
+
 /* Dark mode toggle */
 .dark-toggle {
   background: none;

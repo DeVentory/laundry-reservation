@@ -2,7 +2,7 @@
 
 function initDarkMode() {
   const saved = localStorage.getItem('dark_mode');
-  const isDark = saved === 'true';
+  const isDark = saved === null ? true : saved === 'true';
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   updateDarkToggleIcon(isDark);
 }
