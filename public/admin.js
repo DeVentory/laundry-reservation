@@ -1,6 +1,24 @@
 const MACHINE_LABELS = { washer: '세탁기', dryer: '건조기', both: '세탁+건조' };
 const SESSION_KEY = 'admin_password';
 
+// ─── 다크모드 ─────────────────────────────────────────────────────────────
+
+(function initDarkMode() {
+  const saved = localStorage.getItem('dark_mode');
+  const isDark = saved === null ? true : saved === 'true';
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  const btn = document.getElementById('dark-toggle-btn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+})();
+
+function toggleDarkMode() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = !isDark;
+  document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+  localStorage.setItem('dark_mode', next);
+  document.getElementById('dark-toggle-btn').textContent = next ? '☀️' : '🌙';
+}
+
 let editTarget = null;
 let deleteTarget = null;
 
@@ -25,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupTabBar();
   setupModals();
   document.getElementById('logout-btn').addEventListener('click', handleLogout);
+  document.getElementById('dark-toggle-btn').addEventListener('click', toggleDarkMode);
 });
 
 // ─── 로그인 / 로그아웃 ─────────────────────────────────────────────────────
