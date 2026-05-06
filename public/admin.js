@@ -176,42 +176,54 @@ function renderReservations(reservations) {
   }
 
   const todayStr = new Date().toLocaleDateString('sv-SE');
+  const upcoming = reservations.filter(r => r.date >= todayStr);
+  const past = reservations.filter(r => r.date < todayStr);
 
-  const rows = reservations.map(r => {
-    const isToday = r.date === todayStr;
-    const isPast = r.date < todayStr;
-    const dateLabel = formatDateLabel(r.date);
-    const dateClass = isToday ? 'today' : isPast ? 'past' : '';
-
-    return `
-      <tr>
-        <td><span class="date-badge ${dateClass}">${dateLabel}</span></td>
-        <td><strong>${escHtml(r.room)}</strong></td>
-        <td>${escHtml(r.name)}</td>
-        <td>${r.start_time} ~ ${r.end_time}</td>
-        <td><span class="machine-chip chip-${r.machine}">${MACHINE_LABELS[r.machine]}</span></td>
-        <td>
-          <button class="btn-danger" onclick="deleteReservation(${r.id})">삭제</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-
-  container.innerHTML = `
-    <table class="res-table">
-      <thead>
+  function makeRows(list) {
+    return list.map(r => {
+      const isToday = r.date === todayStr;
+      const dateLabel = formatDateLabel(r.date);
+      const dateClass = isToday ? 'today' : '';
+      return `
         <tr>
-          <th>날짜</th>
-          <th>호실</th>
-          <th>이름</th>
-          <th>시간</th>
-          <th>기기</th>
-          <th></th>
+          <td><span class="date-badge ${dateClass}">${dateLabel}</span></td>
+          <td><strong>${escHtml(r.room)}</strong></td>
+          <td>${escHtml(r.name)}</td>
+          <td>${r.start_time} ~ ${r.end_time}</td>
+          <td><span class="machine-chip chip-${r.machine}">${MACHINE_LABELS[r.machine]}</span></td>
+          <td><button class="btn-danger" onclick="deleteReservation(${r.id})">삭제</button></td>
         </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
+      `;
+    }).join('');
+  }
+
+  const thead = `
+    <thead>
+      <tr>
+        <th>날짜</th><th>호실</th><th>이름</th><th>시간</th><th>기기</th><th></th>
+      </tr>
+    </thead>
   `;
+
+  let html = '';
+
+  if (upcoming.length > 0) {
+    html += `
+      <div class="res-section-label upcoming-label">🗓 예정된 예약 (${upcoming.length}건)</div>
+      <table class="res-table">${thead}<tbody>${makeRows(upcoming)}</tbody></table>
+    `;
+  }
+
+  if (past.length > 0) {
+    html += `
+      <div class="res-section-label past-label">🕘 지난 예약 (${past.length}건)</div>
+      <div class="past-table-wrap">
+        <table class="res-table past-table">${thead}<tbody>${makeRows(past)}</tbody></table>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
 }
 
 // ─── 이름 수정 모달 ─────────────────────────────────────────────────────────

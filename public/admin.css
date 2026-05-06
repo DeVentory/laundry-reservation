@@ -382,6 +382,30 @@ main { padding: 24px; max-width: 900px; margin: 0 auto; }
 }
 .checkbox-label input { width: 16px; height: 16px; cursor: pointer; }
 
+/* ─── 예약 섹션 구분 ─────────────────────────────────────── */
+.res-section-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  margin-top: 12px;
+  letter-spacing: 0.02em;
+}
+.res-section-label:first-child { margin-top: 0; }
+.upcoming-label {
+  background: #EEECFF;
+  color: var(--primary);
+}
+[data-theme="dark"] .upcoming-label {
+  background: #1E2136;
+  color: #A5B4FC;
+}
+.past-label {
+  background: var(--bg);
+  color: var(--text-sub);
+}
+.past-table-wrap { opacity: 0.55; }
+
 /* ─── 빈 상태 / 로딩 ─────────────────────────────────────── */
 .loading, .empty-state {
   text-align: center;
