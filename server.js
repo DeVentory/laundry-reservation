@@ -170,6 +170,26 @@ app.delete('/api/reservations/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// PATCH /api/users/name - 본인 이름 변경
+app.patch('/api/users/name', (req, res) => {
+  const { room, oldName, newName } = req.body;
+  const trimmedNew = newName?.trim();
+
+  if (!room || !oldName || !trimmedNew) {
+    return res.status(400).json({ error: '정보를 올바르게 입력해주세요' });
+  }
+
+  const db = readDB();
+  const user = db.users.find(u => u.room === room);
+  if (!user) return res.status(404).json({ error: '등록된 거주자를 찾을 수 없습니다' });
+  if (user.name !== oldName) return res.status(403).json({ error: '현재 이름 정보가 일치하지 않습니다' });
+
+  user.name = trimmedNew;
+  db.reservations.forEach(r => { if (r.room === room) r.name = trimmedNew; });
+  writeDB(db);
+  res.json({ success: true, name: trimmedNew });
+});
+
 // ─── 관리자 API ───────────────────────────────────────────────────────────
 
 // POST /api/admin/login - 비밀번호 확인

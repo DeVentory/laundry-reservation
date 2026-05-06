@@ -96,7 +96,8 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
   border-radius: 20px;
   white-space: nowrap;
 }
-.logout-btn {
+.header-btns { display: flex; gap: 4px; }
+.header-btn {
   background: none;
   border: 1px solid rgba(255,255,255,0.5);
   color: rgba(255,255,255,0.85);
@@ -106,8 +107,9 @@ header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
   cursor: pointer;
   font-family: inherit;
   transition: all 0.18s;
+  white-space: nowrap;
 }
-.logout-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+.header-btn:hover { background: rgba(255,255,255,0.15); color: white; }
 
 /* Date Tabs */
 .date-tabs {
@@ -369,8 +371,18 @@ main { padding: 14px 14px 90px; max-width: 600px; margin: 0 auto; }
   background: white;
   color: var(--text);
   font-family: inherit;
+}
+.form-group input {
   appearance: none;
   -webkit-appearance: none;
+}
+.form-group select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236B7280' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  padding-right: 36px;
 }
 .form-group input:focus,
 .form-group select:focus { border-color: var(--primary); }
@@ -401,6 +413,34 @@ main { padding: 14px 14px 90px; max-width: 600px; margin: 0 auto; }
   background: #EBF3FD;
   color: var(--primary);
   font-weight: 700;
+}
+
+/* 종료 시간 자동 표시 */
+.end-time-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  color: var(--text-sub);
+}
+.end-time-info strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* 이름 변경 모달 힌트 */
+.modal-hint {
+  font-size: 0.82rem;
+  color: var(--text-sub);
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 8px;
 }
 
 .form-note { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 14px; }

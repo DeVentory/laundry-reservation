@@ -35,7 +35,18 @@ function showLoginScreen() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app').classList.add('hidden');
 
+  buildRoomSelect();
   document.getElementById('login-form').addEventListener('submit', handleLogin);
+}
+
+function buildRoomSelect() {
+  const sel = document.getElementById('login-room');
+  for (let i = 601; i <= 630; i++) {
+    const opt = document.createElement('option');
+    opt.value = `${i}호`;
+    opt.textContent = `${i}호`;
+    sel.appendChild(opt);
+  }
 }
 
 function startApp(session) {
@@ -68,6 +79,7 @@ function setupEventListeners(session) {
   document.getElementById('cancel-confirm-btn').addEventListener('click', () => handleCancel(session));
   document.getElementById('cancel-close-btn').addEventListener('click', closeAllModals);
 
+  // 기기 선택 라디오
   document.querySelectorAll('#machine-group input[type=radio]').forEach(radio => {
     radio.addEventListener('change', () => {
       document.querySelectorAll('#machine-group .radio-label').forEach(label => {
@@ -75,6 +87,20 @@ function setupEventListeners(session) {
       });
     });
   });
+
+  // 이용 시간(duration) 라디오
+  document.querySelectorAll('#duration-group input[type=radio]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('#duration-group .radio-label').forEach(label => {
+        label.classList.toggle('active', label.querySelector('input').checked);
+      });
+      updateStartOptions(parseInt(radio.value));
+    });
+  });
+
+  // 이름 변경
+  document.getElementById('change-name-btn').addEventListener('click', () => openChangeNameModal(session));
+  document.getElementById('change-name-confirm-btn').addEventListener('click', () => handleChangeName(session));
 }
 
 // ─── 로그인 / 로그아웃 ─────────────────────────────────────────────────────
@@ -176,31 +202,31 @@ function buildTimeAxis() {
 // ─── 시간 선택 셀렉트 ──────────────────────────────────────────────────────
 
 function setupTimeSelects() {
-  const startSel = document.getElementById('start-time');
-  for (let m = START_HOUR * 60; m < END_HOUR * 60; m += 30) {
-    const opt = document.createElement('option');
-    opt.value = minToTime(m);
-    opt.textContent = minToTime(m);
-    startSel.appendChild(opt);
-  }
-  startSel.addEventListener('change', updateEndOptions);
-  updateEndOptions();
+  document.getElementById('start-time').addEventListener('change', updateEndTimeDisplay);
+  updateStartOptions(3); // 기본 3시간
 }
 
-function updateEndOptions() {
+function updateStartOptions(duration) {
   const startSel = document.getElementById('start-time');
-  const endSel = document.getElementById('end-time');
-  const startMin = timeToMin(startSel.value);
-  const prevEnd = endSel.value;
+  const prevValue = startSel.value;
+  const maxStart = END_HOUR * 60 - duration * 60;
 
-  endSel.innerHTML = '';
-  for (let m = startMin + 30; m <= END_HOUR * 60; m += 30) {
+  startSel.innerHTML = '';
+  for (let m = START_HOUR * 60; m <= maxStart; m += 30) {
     const opt = document.createElement('option');
     opt.value = minToTime(m);
     opt.textContent = minToTime(m);
-    if (minToTime(m) === prevEnd) opt.selected = true;
-    endSel.appendChild(opt);
+    if (minToTime(m) === prevValue) opt.selected = true;
+    startSel.appendChild(opt);
   }
+  updateEndTimeDisplay();
+}
+
+function updateEndTimeDisplay() {
+  const startTime = document.getElementById('start-time').value;
+  const duration = parseInt(document.querySelector('#duration-group input:checked').value);
+  const endMin = timeToMin(startTime) + duration * 60;
+  document.getElementById('end-time-result').textContent = minToTime(endMin);
 }
 
 // ─── 데이터 로드 ───────────────────────────────────────────────────────────
@@ -282,9 +308,20 @@ function openReservationModal(session) {
   document.querySelectorAll('#machine-group .radio-label').forEach((label, i) => {
     label.classList.toggle('active', i === 0);
   });
-  updateEndOptions();
+  document.querySelectorAll('#duration-group .radio-label').forEach((label, i) => {
+    label.classList.toggle('active', i === 0);
+  });
+  updateStartOptions(3);
   document.getElementById('reservation-modal').classList.add('active');
   document.getElementById('modal-overlay').classList.add('active');
+}
+
+function openChangeNameModal(session) {
+  document.getElementById('change-name-hint').textContent = `현재 이름: ${session.name}`;
+  document.getElementById('new-name-input').value = '';
+  document.getElementById('change-name-modal').classList.add('active');
+  document.getElementById('modal-overlay').classList.add('active');
+  setTimeout(() => document.getElementById('new-name-input').focus(), 100);
 }
 
 function openCancelModal(id, startTime, endTime, machine) {
@@ -307,6 +344,8 @@ function closeAllModals() {
 async function handleSubmit(e, session) {
   e.preventDefault();
   const form = e.target;
+  const duration = parseInt(form.duration.value);
+  const end_time = minToTime(timeToMin(form.start_time.value) + duration * 60);
 
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
@@ -321,7 +360,7 @@ async function handleSubmit(e, session) {
         name: session.name,
         date: state.currentDate,
         start_time: form.start_time.value,
-        end_time: form.end_time.value,
+        end_time,
         machine: form.machine.value
       })
     });
@@ -340,6 +379,36 @@ async function handleSubmit(e, session) {
   } finally {
     btn.disabled = false;
     btn.textContent = '예약하기';
+  }
+}
+
+async function handleChangeName(session) {
+  const newName = document.getElementById('new-name-input').value.trim();
+  if (!newName) { showToast('새 이름을 입력해주세요', 'error'); return; }
+
+  const btn = document.getElementById('change-name-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '처리 중...';
+
+  try {
+    const res = await fetch('/api/users/name', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room: session.room, oldName: session.name, newName })
+    });
+
+    const json = await res.json();
+    if (!res.ok) { showToast(json.error, 'error'); return; }
+
+    session.name = json.name;
+    setSession(session);
+    closeAllModals();
+    showToast('이름이 변경되었습니다', 'success');
+  } catch {
+    showToast('서버 오류가 발생했습니다', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '변경하기';
   }
 }
 
