@@ -1,3 +1,27 @@
+// ─── 다크모드 ──────────────────────────────────────────────────────────────
+
+function initDarkMode() {
+  const saved = localStorage.getItem('dark_mode');
+  const isDark = saved === 'true';
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  updateDarkToggleIcon(isDark);
+}
+
+function toggleDarkMode() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const next = !isDark;
+  document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+  localStorage.setItem('dark_mode', next);
+  updateDarkToggleIcon(next);
+}
+
+function updateDarkToggleIcon(isDark) {
+  const btn = document.getElementById('dark-toggle-btn');
+  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+
+initDarkMode();
+
 const START_HOUR = 7;
 const END_HOUR = 22;
 const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
@@ -78,6 +102,7 @@ function startApp(session) {
 function setupEventListeners(session) {
   document.getElementById('btn-reserve').addEventListener('click', () => openReservationModal(session));
   document.getElementById('logout-btn').addEventListener('click', handleLogout);
+  document.getElementById('dark-toggle-btn').addEventListener('click', toggleDarkMode);
 
   document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target.id === 'modal-overlay') closeAllModals();
