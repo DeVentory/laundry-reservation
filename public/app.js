@@ -12,6 +12,8 @@ let state = {
   cancelTargetId: null
 };
 
+let todayAtLoad = '';
+
 // ─── 세션 관리 ─────────────────────────────────────────────────────────────
 
 function getSession() {
@@ -55,6 +57,13 @@ function startApp(session) {
 
   // 헤더에 사용자 정보 표시
   document.getElementById('user-badge').textContent = session.room;
+
+  todayAtLoad = todayISO();
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && todayISO() !== todayAtLoad) {
+      location.reload();
+    }
+  });
 
   buildDateTabs();
   buildTimeAxis();
