@@ -70,6 +70,9 @@ function startApp(session) {
   setupTimeSelects();
   setupEventListeners(session);
   loadReservations(state.currentDate);
+
+  // 현재 시각선 1분마다 갱신
+  setInterval(renderNowLine, 60_000);
 }
 
 function setupEventListeners(session) {
@@ -94,6 +97,7 @@ function setupEventListeners(session) {
       document.querySelectorAll('#machine-group .radio-label').forEach(label => {
         label.classList.toggle('active', label.querySelector('input').checked);
       });
+      document.getElementById('machine-hint').classList.toggle('hidden', radio.value !== 'both');
     });
   });
 
@@ -257,7 +261,28 @@ function render() {
   const session = getSession();
   renderBar('washer', 'washer-bar');
   renderBar('dryer', 'dryer-bar');
+  renderNowLine();
   renderList(session);
+}
+
+function renderNowLine() {
+  // 오늘 탭일 때만 표시
+  const isToday = state.currentDate === todayAtLoad;
+  ['washer-bar', 'dryer-bar'].forEach(barId => {
+    const bar = document.getElementById(barId);
+    bar.querySelectorAll('.time-now-line').forEach(el => el.remove());
+    if (!isToday) return;
+
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    if (nowMin < START_HOUR * 60 || nowMin > END_HOUR * 60) return;
+
+    const left = ((nowMin - START_HOUR * 60) / TOTAL_MIN) * 100;
+    const line = document.createElement('div');
+    line.className = 'time-now-line';
+    line.style.left = left + '%';
+    bar.appendChild(line);
+  });
 }
 
 function renderBar(machine, barId) {
@@ -317,6 +342,7 @@ function openReservationModal(session) {
   document.querySelectorAll('#machine-group .radio-label').forEach((label, i) => {
     label.classList.toggle('active', i === 0);
   });
+  document.getElementById('machine-hint').classList.add('hidden');
   document.querySelectorAll('#duration-group .radio-label').forEach((label, i) => {
     label.classList.toggle('active', i === 0);
   });
