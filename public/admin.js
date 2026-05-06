@@ -139,11 +139,11 @@ function renderUsers(users) {
             <div class="user-name">${escHtml(u.name)}</div>
           </div>
           <div class="user-res-badges">
-            <span class="user-res-count ${u.upcoming_count > 0 ? 'has-res' : ''}">
-              예정 ${u.upcoming_count}건
+            <span class="user-res-count ${(u.upcoming_count ?? 0) > 0 ? 'has-res' : ''}">
+              예정 ${u.upcoming_count ?? 0}건
             </span>
             <span class="user-res-count total">
-              누적 ${u.total_count}건
+              누적 ${u.total_count ?? u.reservation_count ?? 0}건
             </span>
           </div>
         </div>
