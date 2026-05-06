@@ -621,6 +621,35 @@ main { padding: 14px 14px 90px; max-width: 600px; margin: 0 auto; }
 }
 .notice-link:hover { text-decoration: underline; }
 
+/* 타임라인 툴팁 */
+.timeline-tooltip {
+  position: fixed;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 7px 11px;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 300;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  line-height: 1.5;
+  transform: translateX(-50%);
+}
+.timeline-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 10px;
+  height: 10px;
+  background: var(--text);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.timeline-tooltip.hidden { display: none; }
+
 /* Dark mode toggle */
 .dark-toggle {
   background: none;

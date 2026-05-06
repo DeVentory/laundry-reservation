@@ -361,8 +361,37 @@ function renderBar(machine, barId) {
     label.className = 'block-label';
     label.textContent = r.room;
     block.appendChild(label);
+
+    block.addEventListener('mouseenter', e => showBlockTooltip(e, r));
+    block.addEventListener('mousemove', e => moveBlockTooltip(e));
+    block.addEventListener('mouseleave', hideBlockTooltip);
+    block.addEventListener('touchstart', e => { e.preventDefault(); showBlockTooltip(e.touches[0], r); }, { passive: false });
+    block.addEventListener('touchend', hideBlockTooltip);
+
     bar.appendChild(block);
   });
+}
+
+function showBlockTooltip(e, r) {
+  const tooltip = document.getElementById('timeline-tooltip');
+  tooltip.innerHTML = `${r.room} &nbsp;·&nbsp; ${r.start_time} ~ ${r.end_time}<br><span style="opacity:0.75;font-weight:500">${MACHINE_LABELS[r.machine]}</span>`;
+  tooltip.classList.remove('hidden');
+  moveBlockTooltip(e);
+}
+
+function moveBlockTooltip(e) {
+  const tooltip = document.getElementById('timeline-tooltip');
+  const x = e.clientX;
+  const y = e.clientY;
+  const tipW = tooltip.offsetWidth;
+  const margin = 12;
+  const clampedX = Math.min(Math.max(x, tipW / 2 + margin), window.innerWidth - tipW / 2 - margin);
+  tooltip.style.left = clampedX + 'px';
+  tooltip.style.top = (y - tooltip.offsetHeight - 12) + 'px';
+}
+
+function hideBlockTooltip() {
+  document.getElementById('timeline-tooltip').classList.add('hidden');
 }
 
 function renderList(session) {

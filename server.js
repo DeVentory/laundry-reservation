@@ -25,6 +25,16 @@ function addDays(isoDate, n) {
   return d.toLocaleDateString('sv-SE');
 }
 
+// ─── 오래된 예약 정리 (7일 이전) ──────────────────────────────────────────
+
+async function cleanup() {
+  const cutoff = addDays(todayKST(), -7);
+  const { error } = await supabase.from('reservations').delete().lt('date', cutoff);
+  if (!error) console.log(`🧹 cleanup: ${cutoff} 이전 예약 정리 완료`);
+}
+
+cleanup();
+
 // ─── 미들웨어 ─────────────────────────────────────────────────────────────
 
 app.use(express.json());
