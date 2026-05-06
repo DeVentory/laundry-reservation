@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>세탁실 예약</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+
+  <header>
+    <h1>🧺 세탁실 예약</h1>
+    <p class="subtitle">세탁기 · 건조기 각 1대 &nbsp;|&nbsp; 07:00 ~ 22:00</p>
+  </header>
+
+  <div class="date-tabs" id="date-tabs"></div>
+
+  <main>
+    <section class="section">
+      <h2 class="section-title">이용 현황</h2>
+      <div class="timeline-container">
+        <div class="timeline-row">
+          <div class="machine-label washer-label">세탁기</div>
+          <div class="bar-wrap">
+            <div class="timeline-bar" id="washer-bar"></div>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="machine-label dryer-label">건조기</div>
+          <div class="bar-wrap">
+            <div class="timeline-bar" id="dryer-bar"></div>
+          </div>
+        </div>
+        <div class="time-axis">
+          <div class="label-space"></div>
+          <div class="axis-bar" id="axis-bar"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">예약 목록</h2>
+      <div id="reservation-list">
+        <div class="empty-state">로딩 중...</div>
+      </div>
+    </section>
+  </main>
+
+  <button class="fab" id="btn-reserve">＋ 예약하기</button>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <!-- 예약 모달 -->
+    <div class="modal" id="reservation-modal">
+      <div class="modal-header">
+        <h3>예약하기</h3>
+        <button class="modal-close" data-target="reservation-modal">✕</button>
+      </div>
+      <form id="reservation-form" autocomplete="off">
+        <div class="form-group">
+          <label for="room">호실</label>
+          <input type="text" id="room" name="room" placeholder="예: 301호" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="name">이름</label>
+          <input type="text" id="name" name="name" placeholder="이름을 입력하세요">
+        </div>
+        <div class="form-group">
+          <label>기기 선택</label>
+          <div class="radio-group" id="machine-group">
+            <label class="radio-label active">
+              <input type="radio" name="machine" value="washer" checked>
+              세탁기만
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="machine" value="dryer">
+              건조기만
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="machine" value="both">
+              세탁+건조
+            </label>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="start-time">시작</label>
+            <select id="start-time" name="start_time"></select>
+          </div>
+          <div class="form-group">
+            <label for="end-time">종료</label>
+            <select id="end-time" name="end_time"></select>
+          </div>
+        </div>
+        <p class="form-note">예약 기간: 오늘(D) ~ D+3일</p>
+        <button type="submit" class="btn-primary" id="submit-btn">예약하기</button>
+      </form>
+    </div>
+
+    <!-- 취소 모달 -->
+    <div class="modal" id="cancel-modal">
+      <div class="modal-header">
+        <h3>예약 취소</h3>
+        <button class="modal-close" data-target="cancel-modal">✕</button>
+      </div>
+      <p class="cancel-desc">예약하신 호실 번호를 입력하시면 취소됩니다.</p>
+      <div class="form-group">
+        <label for="cancel-room">호실 번호</label>
+        <input type="text" id="cancel-room" placeholder="예: 301호" inputmode="numeric">
+      </div>
+      <button class="btn-danger" id="cancel-confirm-btn">취소 확인</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

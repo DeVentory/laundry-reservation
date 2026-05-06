@@ -1,0 +1,346 @@
+const START_HOUR = 7;
+const END_HOUR = 22;
+const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
+
+const MACHINE_LABELS = { washer: '세탁기', dryer: '건조기', both: '세탁+건조' };
+const MACHINE_COLORS = { washer: '#4A90D9', dryer: '#E8834A', both: '#7C5CBF' };
+
+let state = {
+  currentDate: todayISO(),
+  reservations: [],
+  cancelTargetId: null
+};
+
+// ─── 초기화 ────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  buildDateTabs();
+  buildTimeAxis();
+  setupTimeSelects();
+  setupEventListeners();
+  loadReservations(state.currentDate);
+});
+
+function setupEventListeners() {
+  document.getElementById('btn-reserve').addEventListener('click', openReservationModal);
+
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target.id === 'modal-overlay') closeAllModals();
+  });
+
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', closeAllModals);
+  });
+
+  document.getElementById('reservation-form').addEventListener('submit', handleSubmit);
+  document.getElementById('cancel-confirm-btn').addEventListener('click', handleCancel);
+
+  // 라디오 버튼 active 클래스 처리
+  document.querySelectorAll('#machine-group input[type=radio]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('#machine-group .radio-label').forEach(label => {
+        label.classList.toggle('active', label.querySelector('input').checked);
+      });
+    });
+  });
+}
+
+// ─── 날짜 탭 ───────────────────────────────────────────────────────────────
+
+function buildDateTabs() {
+  const container = document.getElementById('date-tabs');
+  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const labelNames = ['오늘', '내일', '모레', '글피'];
+
+  for (let i = 0; i < 4; i++) {
+    const date = addDays(state.currentDate, i);
+    const d = new Date(date + 'T00:00:00');
+    const tab = document.createElement('button');
+    tab.className = 'date-tab' + (i === 0 ? ' active' : '');
+    tab.dataset.date = date;
+    tab.innerHTML = `
+      <span class="tab-name">${labelNames[i]}</span>
+      <span class="tab-date">${d.getMonth() + 1}/${d.getDate()}(${dayNames[d.getDay()]})</span>
+    `;
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.date-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      state.currentDate = date;
+      loadReservations(date);
+    });
+    container.appendChild(tab);
+  }
+}
+
+// ─── 시간 축 ───────────────────────────────────────────────────────────────
+
+function buildTimeAxis() {
+  const axis = document.getElementById('axis-bar');
+  const hours = [7, 10, 13, 16, 19, 22];
+
+  hours.forEach((h, i) => {
+    const tick = document.createElement('div');
+    tick.className = 'axis-tick';
+    const pct = ((h - START_HOUR) / (END_HOUR - START_HOUR)) * 100;
+    tick.textContent = String(h).padStart(2, '0') + '시';
+
+    if (i === 0) {
+      tick.style.left = '0';
+    } else if (i === hours.length - 1) {
+      tick.style.right = '0';
+    } else {
+      tick.style.left = pct + '%';
+      tick.style.transform = 'translateX(-50%)';
+    }
+    axis.appendChild(tick);
+  });
+}
+
+// ─── 시간 선택 셀렉트 ──────────────────────────────────────────────────────
+
+function setupTimeSelects() {
+  const startSel = document.getElementById('start-time');
+  for (let m = START_HOUR * 60; m < END_HOUR * 60; m += 30) {
+    const opt = document.createElement('option');
+    opt.value = minToTime(m);
+    opt.textContent = minToTime(m);
+    startSel.appendChild(opt);
+  }
+  startSel.addEventListener('change', updateEndOptions);
+  updateEndOptions();
+}
+
+function updateEndOptions() {
+  const startSel = document.getElementById('start-time');
+  const endSel = document.getElementById('end-time');
+  const startMin = timeToMin(startSel.value);
+  const prevEnd = endSel.value;
+
+  endSel.innerHTML = '';
+  for (let m = startMin + 30; m <= END_HOUR * 60; m += 30) {
+    const opt = document.createElement('option');
+    opt.value = minToTime(m);
+    opt.textContent = minToTime(m);
+    if (minToTime(m) === prevEnd) opt.selected = true;
+    endSel.appendChild(opt);
+  }
+}
+
+// ─── 데이터 로드 ───────────────────────────────────────────────────────────
+
+async function loadReservations(date) {
+  try {
+    const res = await fetch(`/api/reservations?date=${date}`);
+    if (!res.ok) throw new Error();
+    state.reservations = await res.json();
+    render();
+  } catch {
+    showToast('데이터를 불러오지 못했습니다', 'error');
+  }
+}
+
+// ─── 렌더링 ────────────────────────────────────────────────────────────────
+
+function render() {
+  renderBar('washer', 'washer-bar');
+  renderBar('dryer', 'dryer-bar');
+  renderList();
+}
+
+function renderBar(machine, barId) {
+  const bar = document.getElementById(barId);
+  bar.innerHTML = '';
+  const relevant = state.reservations.filter(r => r.machine === machine || r.machine === 'both');
+
+  relevant.forEach(r => {
+    const startMin = timeToMin(r.start_time) - START_HOUR * 60;
+    const endMin = timeToMin(r.end_time) - START_HOUR * 60;
+    const left = (startMin / TOTAL_MIN) * 100;
+    const width = ((endMin - startMin) / TOTAL_MIN) * 100;
+
+    const block = document.createElement('div');
+    block.className = 'timeline-block';
+    block.style.cssText = `left:${left}%;width:${width}%;background:${MACHINE_COLORS[machine]}`;
+    block.title = `${r.room} ${r.name}: ${r.start_time}~${r.end_time}`;
+
+    const label = document.createElement('span');
+    label.className = 'block-label';
+    label.textContent = `${r.room} ${r.name}`;
+    block.appendChild(label);
+    bar.appendChild(block);
+  });
+}
+
+function renderList() {
+  const list = document.getElementById('reservation-list');
+
+  if (state.reservations.length === 0) {
+    list.innerHTML = '<div class="empty-state">예약이 없습니다</div>';
+    return;
+  }
+
+  list.innerHTML = state.reservations.map(r => `
+    <div class="reservation-card card-${r.machine}">
+      <div class="card-info">
+        <div class="card-top">
+          <span class="card-room">${escHtml(r.room)}</span>
+          <span class="card-name">${escHtml(r.name)}</span>
+        </div>
+        <div class="card-time">${r.start_time} ~ ${r.end_time}</div>
+        <span class="card-machine badge-${r.machine}">${MACHINE_LABELS[r.machine]}</span>
+      </div>
+      <button class="cancel-btn" onclick="openCancelModal(${r.id})">취소</button>
+    </div>
+  `).join('');
+}
+
+// ─── 모달 ──────────────────────────────────────────────────────────────────
+
+function openReservationModal() {
+  document.getElementById('reservation-form').reset();
+  // 라디오 active 초기화
+  document.querySelectorAll('#machine-group .radio-label').forEach((label, i) => {
+    label.classList.toggle('active', i === 0);
+  });
+  updateEndOptions();
+  document.getElementById('reservation-modal').classList.add('active');
+  document.getElementById('modal-overlay').classList.add('active');
+}
+
+function openCancelModal(id) {
+  state.cancelTargetId = id;
+  document.getElementById('cancel-room').value = '';
+  document.getElementById('cancel-modal').classList.add('active');
+  document.getElementById('modal-overlay').classList.add('active');
+  setTimeout(() => document.getElementById('cancel-room').focus(), 100);
+}
+
+function closeAllModals() {
+  document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+  document.getElementById('modal-overlay').classList.remove('active');
+  state.cancelTargetId = null;
+}
+
+// ─── API 처리 ──────────────────────────────────────────────────────────────
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const room = form.room.value.trim();
+  const name = form.name.value.trim();
+
+  if (!room || !name) {
+    showToast('호실과 이름을 입력해주세요', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = '처리 중...';
+
+  try {
+    const res = await fetch('/api/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        room,
+        name,
+        date: state.currentDate,
+        start_time: form.start_time.value,
+        end_time: form.end_time.value,
+        machine: form.machine.value
+      })
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      showToast(json.error, 'error');
+      return;
+    }
+
+    closeAllModals();
+    await loadReservations(state.currentDate);
+    showToast('예약이 완료되었습니다!', 'success');
+  } catch {
+    showToast('서버 오류가 발생했습니다', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '예약하기';
+  }
+}
+
+async function handleCancel() {
+  const room = document.getElementById('cancel-room').value.trim();
+  if (!room) {
+    showToast('호실 번호를 입력해주세요', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('cancel-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '처리 중...';
+
+  try {
+    const res = await fetch(`/api/reservations/${state.cancelTargetId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room })
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      showToast(json.error, 'error');
+      return;
+    }
+
+    closeAllModals();
+    await loadReservations(state.currentDate);
+    showToast('예약이 취소되었습니다', 'success');
+  } catch {
+    showToast('서버 오류가 발생했습니다', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '취소 확인';
+  }
+}
+
+// ─── 유틸 ──────────────────────────────────────────────────────────────────
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function addDays(isoDate, days) {
+  const d = new Date(isoDate + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function timeToMin(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minToTime(m) {
+  return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function escHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
