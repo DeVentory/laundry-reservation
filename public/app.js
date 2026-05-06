@@ -98,6 +98,8 @@ function setupEventListeners(session) {
         label.classList.toggle('active', label.querySelector('input').checked);
       });
       document.getElementById('machine-hint').classList.toggle('hidden', radio.value !== 'both');
+      const duration = parseInt(document.querySelector('#duration-group input:checked').value);
+      updateStartOptions(duration);
     });
   });
 
@@ -219,18 +221,41 @@ function setupTimeSelects() {
   updateStartOptions(3); // 기본 3시간
 }
 
+function isSlotConflict(startMin, duration, machine) {
+  const startTime = minToTime(startMin);
+  const endTime = minToTime(startMin + duration * 60);
+  const machinesToCheck = machine === 'both' ? ['washer', 'dryer'] : [machine];
+  return machinesToCheck.some(m =>
+    state.reservations.some(r =>
+      (r.machine === m || r.machine === 'both') &&
+      !(r.end_time <= startTime || r.start_time >= endTime)
+    )
+  );
+}
+
 function updateStartOptions(duration) {
+  const machine = document.querySelector('#machine-group input:checked').value;
   const startSel = document.getElementById('start-time');
   const prevValue = startSel.value;
   const maxStart = END_HOUR * 60 - duration * 60;
 
   startSel.innerHTML = '';
+  let firstAvailable = null;
   for (let m = START_HOUR * 60; m <= maxStart; m += 30) {
+    const timeStr = minToTime(m);
+    const conflict = isSlotConflict(m, duration, machine);
     const opt = document.createElement('option');
-    opt.value = minToTime(m);
-    opt.textContent = minToTime(m);
-    if (minToTime(m) === prevValue) opt.selected = true;
+    opt.value = timeStr;
+    opt.textContent = conflict ? `${timeStr} (예약됨)` : timeStr;
+    opt.disabled = conflict;
+    if (!conflict && firstAvailable === null) firstAvailable = timeStr;
+    if (timeStr === prevValue && !conflict) opt.selected = true;
     startSel.appendChild(opt);
+  }
+
+  // 이전 선택값이 비활성화됐으면 첫 번째 가능한 시간으로 이동
+  if (!startSel.value || startSel.options[startSel.selectedIndex]?.disabled) {
+    startSel.value = firstAvailable || '';
   }
   updateEndTimeDisplay();
 }
