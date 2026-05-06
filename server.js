@@ -182,12 +182,17 @@ app.post('/api/admin/login', (req, res) => {
 // GET /api/admin/users
 app.get('/api/admin/users', requireAdmin, async (req, res) => {
   const { data: users } = await supabase.from('users').select('*');
-  const { data: reservations } = await supabase.from('reservations').select('room');
+  const { data: reservations } = await supabase.from('reservations').select('room, date');
 
-  const result = (users || []).map(u => ({
-    ...u,
-    reservation_count: (reservations || []).filter(r => r.room === u.room).length
-  }));
+  const today = todayKST();
+  const result = (users || []).map(u => {
+    const userRes = (reservations || []).filter(r => r.room === u.room);
+    return {
+      ...u,
+      total_count: userRes.length,
+      upcoming_count: userRes.filter(r => r.date >= today).length
+    };
+  });
 
   res.json(result);
 });

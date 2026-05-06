@@ -131,7 +131,6 @@ function renderUsers(users) {
     const regDate = u.registered_at
       ? new Date(u.registered_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
       : '날짜 없음';
-    const hasRes = u.reservation_count > 0;
     return `
       <div class="user-card">
         <div class="user-card-top">
@@ -139,14 +138,19 @@ function renderUsers(users) {
             <div class="user-room">${escHtml(u.room)}</div>
             <div class="user-name">${escHtml(u.name)}</div>
           </div>
-          <span class="user-res-count ${hasRes ? 'has-res' : ''}">
-            예약 ${u.reservation_count}건
-          </span>
+          <div class="user-res-badges">
+            <span class="user-res-count ${u.upcoming_count > 0 ? 'has-res' : ''}">
+              예정 ${u.upcoming_count}건
+            </span>
+            <span class="user-res-count total">
+              누적 ${u.total_count}건
+            </span>
+          </div>
         </div>
         <div class="user-meta">등록일: ${regDate}</div>
         <div class="user-actions">
           <button class="btn-outline" onclick="openEditModal('${escAttr(u.room)}', '${escAttr(u.name)}')">이름 수정</button>
-          <button class="btn-danger" onclick="openDeleteModal('${escAttr(u.room)}', '${escAttr(u.name)}', ${u.reservation_count})">삭제</button>
+          <button class="btn-danger" onclick="openDeleteModal('${escAttr(u.room)}', '${escAttr(u.name)}', ${u.total_count})">삭제</button>
         </div>
       </div>
     `;
