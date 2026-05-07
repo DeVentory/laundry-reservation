@@ -258,23 +258,38 @@ function isSlotConflict(startMin, duration, machine) {
   );
 }
 
+function nowMinKST() {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+}
+
 function updateStartOptions(duration) {
   const machine = document.querySelector('#machine-group input:checked').value;
   const startSel = document.getElementById('start-time');
   const prevValue = startSel.value;
   const maxStart = END_HOUR * 60 - duration * 60;
+  const isToday = state.currentDate === todayAtLoad;
+  const currentMin = isToday ? nowMinKST() : -1;
 
   startSel.innerHTML = '';
   let firstAvailable = null;
   for (let m = START_HOUR * 60; m <= maxStart; m += 30) {
     const timeStr = minToTime(m);
-    const conflict = isSlotConflict(m, duration, machine);
+    const isPast = m <= currentMin;
+    const conflict = !isPast && isSlotConflict(m, duration, machine);
     const opt = document.createElement('option');
     opt.value = timeStr;
-    opt.textContent = conflict ? `${timeStr} (예약됨)` : timeStr;
-    opt.disabled = conflict;
-    if (!conflict && firstAvailable === null) firstAvailable = timeStr;
-    if (timeStr === prevValue && !conflict) opt.selected = true;
+    if (isPast) {
+      opt.textContent = `${timeStr} (지난 시간)`;
+      opt.disabled = true;
+    } else if (conflict) {
+      opt.textContent = `${timeStr} (예약됨)`;
+      opt.disabled = true;
+    } else {
+      opt.textContent = timeStr;
+    }
+    if (!isPast && !conflict && firstAvailable === null) firstAvailable = timeStr;
+    if (timeStr === prevValue && !isPast && !conflict) opt.selected = true;
     startSel.appendChild(opt);
   }
 

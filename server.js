@@ -108,6 +108,13 @@ app.post('/api/reservations', async (req, res) => {
     return res.status(400).json({ error: '시간을 올바르게 입력해주세요 (07:00~22:00)' });
   }
 
+  if (date === today) {
+    const nowKST = new Date().toLocaleTimeString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 5);
+    if (start_time <= nowKST) {
+      return res.status(400).json({ error: '이미 지난 시간은 예약할 수 없습니다' });
+    }
+  }
+
   const { data: dayReservations } = await supabase
     .from('reservations')
     .select('*')
