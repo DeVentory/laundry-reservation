@@ -72,6 +72,8 @@ create table reservations (
 
 ### 2. 실행
 
+Node.js **22 이상**이 필요합니다. Supabase 클라이언트가 Node 22의 내장 WebSocket을 사용합니다.
+
 ```bash
 git clone https://github.com/DeVentory/laundry-reservation.git
 cd laundry-reservation
@@ -93,8 +95,10 @@ npm start
 |------|:---:|--------|------|
 | `SUPABASE_URL` | ✅ | — | Supabase 프로젝트 URL |
 | `SUPABASE_KEY` | ✅ | — | Supabase API 키 |
-| `ADMIN_PASSWORD` | ✅ | — | 관리자 로그인 비밀번호. **설정하지 않으면 코드의 약한 기본값이 쓰이므로 반드시 지정** |
+| `ADMIN_PASSWORD` | ✅ | — | 관리자 로그인 비밀번호. 추측하기 어려운 값으로 지정 |
 | `PORT` | | `3000` | 서버 포트 (Render는 자동 지정) |
+
+필수 변수 중 하나라도 없으면 서버가 시작되지 않고 어떤 변수가 빠졌는지 출력한 뒤 종료합니다.
 
 ---
 

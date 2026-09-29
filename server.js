@@ -2,8 +2,15 @@ const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
+// 필수 환경 변수가 없으면 약한 기본값으로 뜨지 않고 바로 종료한다
+const missingEnv = ['SUPABASE_URL', 'SUPABASE_KEY', 'ADMIN_PASSWORD'].filter(k => !process.env[k]);
+if (missingEnv.length) {
+  console.error(`❌ 환경 변수가 설정되지 않았습니다: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
+
 const app = express();
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1234';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 function requireAdmin(req, res, next) {
