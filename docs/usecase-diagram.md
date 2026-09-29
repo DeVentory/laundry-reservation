@@ -21,22 +21,23 @@
 2. 예약 현황 조회 (`GET /api/reservations`)
 3. 예약 생성 (`POST /api/reservations`)
 4. 본인 예약 취소 (`DELETE /api/reservations/:id`)
-5. 이름 변경
+5. 이름 변경 (`PATCH /api/users/name`)
 6. 다크모드 토글
 
 **관리자**
 1. 관리자 로그인 (`POST /api/admin/login`)
 2. 거주자 목록 조회 (`GET /api/admin/users`)
-3. 거주자 삭제 (`DELETE /api/admin/users/:room`)
-4. 전체 예약 조회 (`GET /api/admin/reservations`)
-5. 예약 강제 삭제 (`DELETE /api/admin/reservations/:id`)
+3. 거주자 이름 수정 (`PATCH /api/admin/users/:room`)
+4. 거주자 삭제 (`DELETE /api/admin/users/:room`)
+5. 전체 예약 조회 (`GET /api/admin/reservations`)
+6. 예약 강제 삭제 (`DELETE /api/admin/reservations/:id`)
 
 ## 3단계: 관계 식별 및 검토
 
 - **다크모드 토글**: 서버 API가 없는 순수 프론트(localStorage) 기능 → 백엔드 유스케이스가 아니라 UI 이벤트 흐름으로 간주, **유스케이스에서 제외**
-- **이름 변경**: 별도 API 없이 재로그인 시 갱신되는 구조 → 로그인 유스케이스의 **이벤트 흐름**으로 흡수 (홀로 존재하는 유스케이스이므로 재검토 대상)
-- **예약 생성**과 **예약 취소**는 둘 다 "본인 인증된 상태"를 전제로 하므로, 두 유스케이스 모두 **로그인**을 `<<include>>` 관계로 참조
-- **거주자 삭제**와 **예약 강제 삭제**도 마찬가지로 **관리자 로그인**을 `<<include>>`
+- **이름 변경**: 별도 API(`PATCH /api/users/name`)로 사용자 테이블과 기존 예약의 이름을 함께 갱신하는 독립 기능 → **독립 유스케이스로 유지**하고, 현재 이름·호실 확인이 필요하므로 **로그인**을 `<<include>>`
+- **예약 생성**과 **예약 취소**도 "본인 인증된 상태"를 전제로 하므로, 두 유스케이스 모두 **로그인**을 `<<include>>` 관계로 참조
+- 관리자 API는 모두 `requireAdmin`(요청 헤더의 비밀번호 검사)을 거치므로, **관리자 유스케이스 전부**(거주자 목록 조회·이름 수정·삭제, 전체 예약 조회, 예약 강제 삭제)가 **관리자 로그인**을 `<<include>>`
 - 관리자와 거주자는 동일한 "예약 조회" 데이터를 보지만 표현 방식(테이블 vs 타임라인)이 달라 **별개 유스케이스로 유지**
 
 ## 4단계: 정제 — 최종 유스케이스 다이어그램
@@ -56,20 +57,27 @@ flowchart LR
     UC7([거주자 삭제])
     UC8([전체 예약 조회])
     UC9([예약 강제 삭제])
+    UC10([이름 변경])
+    UC11([거주자 이름 수정])
 
     Resident --- UC1
     Resident --- UC2
     Resident --- UC3
     Resident --- UC4
+    Resident --- UC10
 
     Admin --- UC5
     Admin --- UC6
     Admin --- UC7
     Admin --- UC8
     Admin --- UC9
+    Admin --- UC11
 
     UC3 -.include.-> UC1
     UC4 -.include.-> UC1
+    UC10 -.include.-> UC1
+    UC6 -.include.-> UC5
+    UC11 -.include.-> UC5
     UC7 -.include.-> UC5
     UC8 -.include.-> UC5
     UC9 -.include.-> UC5
@@ -82,11 +90,14 @@ flowchart LR
     UC7 --> Supabase
     UC8 --> Supabase
     UC9 --> Supabase
+    UC10 --> Supabase
+    UC11 --> Supabase
 ```
 
 ### 관계 해석 (자연어)
 
 - 거주자는 예약을 하기 위해 시스템과 상호작용한다. 예약을 하기 위해서는 로그인(인증)을 반드시 수행해야 한다.
 - 거주자는 본인 예약을 취소하기 위해 시스템과 상호작용한다. 취소를 하기 위해서도 로그인을 반드시 수행해야 한다.
+- 거주자는 자신의 이름을 바꾸기 위해 시스템과 상호작용한다. 이름 변경도 로그인을 반드시 수행해야 한다.
 - 관리자는 거주자/예약 데이터를 관리할 목적으로 시스템과 상호작용한다. 관리 기능을 쓰기 위해서는 관리자 로그인을 반드시 수행해야 한다.
 - 모든 유스케이스는 Supabase(시스템 액터)의 데이터 저장/조회 서비스를 필요로 한다.
